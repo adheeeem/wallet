@@ -146,3 +146,23 @@ func (s *testService) addAccount(data testAccount) (*types.Account, []*types.Pay
 	}
 	return account, payments, nil
 }
+func TestService_Repeat_success(t *testing.T) {
+	s := newTestService()
+	_, payments, err := s.addAccount(defaultTestAccount)
+
+	if err != nil {
+		t.Errorf("Repeat(): can't add account, error = %v", err)
+		return
+	}
+	payment := payments[0]
+	otherPayment, err := s.Repeat(payment.ID)
+	if err != nil {
+		t.Errorf("Repeat(): can't repeat payment, error = %v", err)
+		return
+	}
+
+	if payment.ID == otherPayment.ID {
+		t.Errorf("Repeat(): two payments have same ids")
+		return
+	}
+}
