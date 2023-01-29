@@ -166,3 +166,38 @@ func TestService_Repeat_success(t *testing.T) {
 		return
 	}
 }
+
+func TestService_FavoritePayment(t *testing.T) {
+	s := newTestService()
+	_, payments, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("Repeat(): can't add account, error = %v", err)
+		return
+	}
+	payment := payments[0]
+	_, err = s.FavoritePayment(payment.ID, "Alif Course")
+	if err != nil {
+		t.Errorf("FavoritePayment(): can't create a favorite payment, error = %v", err)
+		return
+	}
+}
+
+func TestService_PayFromFavorite(t *testing.T) {
+	s := newTestService()
+	_, payments, err := s.addAccount(defaultTestAccount)
+	if err != nil {
+		t.Errorf("Repeat(): can't add account, error = %v", err)
+		return
+	}
+	payment := payments[0]
+	favoritePayment, err := s.FavoritePayment(payment.ID, "Alif Course")
+	if err != nil {
+		t.Errorf("PayFromFavorite(): can't create a favorite payment, error = %v", err)
+		return
+	}
+	_, err = s.PayFromFavorite(favoritePayment.ID)
+	if err != nil {
+		t.Errorf("PayFromFavorite(): can't pay from favorite payment, error = %v", err)
+		return
+	}
+}
