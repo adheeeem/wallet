@@ -2,13 +2,14 @@ package wallet
 
 import (
 	"errors"
-	"github.com/adheeeem/wallet/pkg/types"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/adheeeem/wallet/pkg/types"
+	"github.com/google/uuid"
 )
 
 var ErrPhoneRegistered = errors.New("phone already registered")
@@ -113,7 +114,7 @@ func (s *Service) FindPaymentByID(paymentID string) (*types.Payment, error) {
 
 func (s *Service) Reject(paymentID string) error {
 	payment, err := s.FindPaymentByID(paymentID)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	account, err := s.FindAccountByID(payment.AccountID)
@@ -128,7 +129,7 @@ func (s *Service) Reject(paymentID string) error {
 
 func (s *Service) Repeat(paymentID string) (*types.Payment, error) {
 	payment, err := s.FindPaymentByID(paymentID)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -174,7 +175,6 @@ func (s *Service) PayFromFavorite(favoriteID string) (*types.Payment, error) {
 	}
 	return payment, nil
 }
-
 func (s *Service) ExportToFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
