@@ -279,3 +279,38 @@ func BenchmarkService_FilterPayments(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkService_FilterPaymentByFn(b *testing.B) {
+	s := newTestService()
+	_, err := s.RegisterAccount("+992985570302")
+	_, err = s.RegisterAccount("+992981111111")
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = s.Deposit(1, 1000_000_00)
+	err = s.Deposit(2, 1000_000_00)
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	_, err = s.Pay(1, types.Money(100_00), "grocery")
+
+	for i := 0; i < 1000; i++ {
+		_, err = s.Pay(1, types.Money(10), "grocery")
+	}
+
+	if err != nil {
+		log.Print(err)
+	}
+	for i := 0; i < b.N; i++ {
+		_, err := s.FilterPaymentByFn(func(payment types.Payment) bool {
+			return payment.AccountID == 1
+		}, 20)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
