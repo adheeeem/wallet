@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/adheeeem/wallet/pkg/types"
 	"github.com/google/uuid"
@@ -446,4 +447,75 @@ func (s *Service) HistoryToFiles(payments []types.Payment, dir string, records i
 		}
 	}
 	return nil
+}
+
+func (s *Service) SumPayments(goroutines int) types.Money {
+	mu := sync.Mutex{}
+	sum := types.Money(0)
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(s.payments); i += goroutines {
+		j := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if j+goroutines <= len(s.payments) {
+				val := types.Money(0)
+				for _, payment := range s.payments[j : j+goroutines] {
+					val += payment.Amount
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				sum += val
+			} else {
+				val := types.Money(0)
+				for _, payment := range s.payments[j:] {
+					val += payment.Amount
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				sum += val
+			}
+		}()
+	}
+	wg.Wait()
+
+	return sum
+}
+
+func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payment, error) {
+	wg := sync.WaitGroup{}
+
+	mu := sync.Mutex{}
+	var answer []types.Payment
+	for i := 0; i < len(s.payments); i += goroutines {
+		j := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if j+goroutines <= len(s.payments) {
+				var pays []types.Payment
+				for _, payment := range s.payments[j : j+goroutines] {
+					if payment.AccountID == accountID {
+						pays = append(pays, *payment)
+					}
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				answer = append(answer, pays...)
+			} else {
+				var pays []types.Payment
+				for _, payment := range s.payments[j:] {
+					if payment.AccountID == accountID {
+						pays = append(pays, *payment)
+					}
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				answer = append(answer, pays...)
+			}
+		}()
+	}
+	wg.Wait()
+
+	return answer, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/adheeeem/wallet/pkg/types"
 	"github.com/google/uuid"
+	"log"
 	"reflect"
 	"testing"
 )
@@ -199,5 +200,82 @@ func TestService_PayFromFavorite(t *testing.T) {
 	if err != nil {
 		t.Errorf("PayFromFavorite(): can't pay from favorite payment, error = %v", err)
 		return
+	}
+}
+func BenchmarkService_SumPayments(b *testing.B) {
+	s := newTestService()
+	_, err := s.RegisterAccount("+992985570302")
+	_, err = s.RegisterAccount("+992981111111")
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = s.Deposit(1, 1000_00)
+	err = s.Deposit(2, 1000_00)
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	_, err = s.Pay(1, types.Money(100_00), "grocery")
+	_, err = s.Pay(1, types.Money(1_00), "course")
+	_, err = s.Pay(1, types.Money(1), "1")
+	_, err = s.Pay(1, types.Money(1_0), "2")
+	_, err = s.Pay(1, types.Money(1_0), "4")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+	_, err = s.Pay(2, types.Money(1_00), "course")
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	want := types.Money(11121)
+	for i := 0; i < b.N; i++ {
+		result := s.SumPayments(2)
+		if result != want {
+			b.Fatalf("invalid result, got %v, want %v", result, want)
+		}
+	}
+}
+
+func BenchmarkService_FilterPayments(b *testing.B) {
+	s := newTestService()
+	_, err := s.RegisterAccount("+992985570302")
+	_, err = s.RegisterAccount("+992981111111")
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = s.Deposit(1, 1000_000_00)
+	err = s.Deposit(2, 1000_000_00)
+
+	if err != nil {
+		log.Print(err)
+	}
+
+	_, err = s.Pay(1, types.Money(100_00), "grocery")
+
+	for i := 0; i < 1000; i++ {
+		_, err = s.Pay(1, types.Money(10), "grocery")
+	}
+
+	if err != nil {
+		log.Print(err)
+	}
+	for i := 0; i < b.N; i++ {
+		_, err := s.FilterPayments(1, 20)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
