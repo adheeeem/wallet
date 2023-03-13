@@ -30,6 +30,11 @@ type Service struct {
 	favorites     []*types.Favorite
 }
 
+type Progress struct {
+	Part   int
+	Result types.Money
+}
+
 func (s *Service) RegisterAccount(phone types.Phone) (*types.Account, error) {
 	for _, account := range s.accounts {
 		if account.Phone == phone {
@@ -519,6 +524,7 @@ func (s *Service) FilterPayments(accountID int64, goroutines int) ([]types.Payme
 
 	return answer, nil
 }
+
 func (s *Service) FilterPaymentByFn(filter func(payment types.Payment) bool, goroutines int) ([]types.Payment, error) {
 	wg := sync.WaitGroup{}
 
@@ -555,4 +561,22 @@ func (s *Service) FilterPaymentByFn(filter func(payment types.Payment) bool, gor
 	wg.Wait()
 
 	return answer, nil
+}
+
+func (s *Service) SumPaymentsWithProgress() <-chan Progress {
+	parts := math.Ceil(float64(len(s.payments) / 100_000))
+	size := 100_000
+	ch := make(chan Progress)
+	for i := 0; i < int(parts); i++ {
+		j := i
+		go func(ch chan<- Progress, data []*types.Payment) {
+			defer close(ch)
+			sum := types.Money(0)
+			for _, v := range data {
+				sum += v.Amount
+			}
+			ch <- Progress{Part: j, Result: sum}
+		}(ch, s.payments[i*size:(i+1)*size])
+	}
+	return ch
 }
